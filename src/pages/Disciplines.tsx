@@ -10,8 +10,11 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { AxiosError } from "axios";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Form from "../components/Form";
+import useAlert from "../hooks/useAlert";
 import useAuth from "../hooks/useAuth";
 import api, {
   Category,
@@ -19,6 +22,7 @@ import api, {
   TeacherDisciplines,
   Test,
   TestByDiscipline,
+  TestData,
 } from "../services/api";
 
 function Disciplines() {
@@ -26,6 +30,8 @@ function Disciplines() {
   const { token } = useAuth();
   const [terms, setTerms] = useState<TestByDiscipline[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const { setMessage } = useAlert();
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     async function loadPage() {
@@ -39,12 +45,40 @@ function Disciplines() {
     loadPage();
   }, [token]);
 
+  function handleInputChange(e: any) {
+    setSearch(e.target.value);
+}
+
+  async function handleSubmit(e: React.FormEvent){
+    e.preventDefault();
+    setMessage(null);
+
+    try {
+      const { data: testsData } = await api.getTestsByDisciplineName(token, search);
+      setTerms(testsData.tests);
+    } catch (error: Error | AxiosError | any) {
+      if (error.response) {
+        setMessage({
+            type: "error",
+            text: error.response.data,
+        });
+        return;
+      }
+    }
+  }
+
   return (
     <>
-      <TextField
-        sx={{ marginX: "auto", marginBottom: "25px", width: "450px" }}
-        label="Pesquise por disciplina"
-      />
+      <Box sx={{ marginX: "auto", marginBottom: "25px", width: "450px"}}>
+        <Form onSubmit={handleSubmit}>
+          <TextField
+            sx={{width: "450px" }}
+            label="Pesquise por disciplina"
+            onChange={handleInputChange}
+            />
+          <Button sx={{marginLeft: "20px"}} type="submit">Pesquisar</Button>
+        </Form>
+      </Box>
       <Divider sx={{ marginBottom: "35px" }} />
       <Box
         sx={{
@@ -198,17 +232,24 @@ interface TestsProps {
 }
 
 function Tests({ testsWithTeachers: testsWithDisciplines }: TestsProps) {
+  const { token } = useAuth();
+
+  async function addView(id: any){
+    await api.postView(id, token);
+  }
+
   return (
     <>
       {testsWithDisciplines.map((testsWithDisciplines) =>
         testsWithDisciplines.tests.map((test) => (
           <Typography key={test.id} color="#878787">
             <Link
+              onClick={() => addView(test.id)}
               href={test.pdfUrl}
               target="_blank"
               underline="none"
               color="inherit"
-            >{`${test.name} (${testsWithDisciplines.teacherName})`}</Link>
+            >{`${test.name} (${testsWithDisciplines.teacherName}) (${test.view} views)`}</Link>
           </Typography>
         ))
       )}

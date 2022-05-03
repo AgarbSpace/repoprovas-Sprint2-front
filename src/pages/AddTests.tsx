@@ -77,8 +77,7 @@ async function handleSubmit(e: React.FormEvent) {
     }
 
     try {
-        console.log(formData)
-        await api.addTest({ ...formData });
+        await api.addTest({ ...formData }, token);
         navigate("/app/disciplinas");
     } catch (error: Error | AxiosError | any) {
     if (error.response) {

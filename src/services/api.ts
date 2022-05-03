@@ -9,7 +9,7 @@ interface UserData {
   password: string;
 }
 
-interface TestData {
+export interface TestData {
   testTitle: string;
   pdfTest: string;
   category: string;
@@ -33,8 +33,10 @@ async function signIn(signInData: UserData) {
   return baseAPI.post<{ token: string }>("/sign-in", signInData);
 }
 
-async function addTest(testData: TestData){
-  return baseAPI.post<TestData>("/add-test")
+async function addTest(testData: TestData, token: any){
+  const config = getConfig(token)
+  console.log(testData);
+  return baseAPI.post<TestData>("/add-test", testData, config);
 }
 
 export interface Term {
@@ -69,6 +71,7 @@ export interface Category {
 export interface Test {
   id: number;
   name: string;
+  view: number
   pdfUrl: string;
   category: Category;
 }
@@ -90,6 +93,13 @@ async function getTestsByDiscipline(token: string) {
     config
   );
 }
+async function getTestsByDisciplineName(token: any, name: string) {
+  const config = getConfig(token);
+  return baseAPI.get<{ tests: TestByDiscipline[] }>(
+    `/tests?groupBy=disciplines&findBy=${name}`,
+    config
+  );
+}
 
 async function getTestsByTeacher(token: string) {
   const config = getConfig(token);
@@ -104,13 +114,21 @@ async function getCategories(token: string) {
   return baseAPI.get<{ categories: Category[] }>("/categories", config);
 }
 
+async function postView(id: number, token: any){
+  console.log("vem aq")
+  const config = getConfig(token);
+  return baseAPI.post("/tests", {id: id} ,config)
+}
+
 const api = {
   signUp,
   signIn,
   getTestsByDiscipline,
   getTestsByTeacher,
   getCategories,
-  addTest
+  addTest,
+  postView,
+  getTestsByDisciplineName
 };
 
 export default api;
